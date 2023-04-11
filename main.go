@@ -1,12 +1,15 @@
 package main
 
 import (
+	"bufio"
 	"encoding/json"
 	"fmt"
 	"io"
 	"os"
+	"strconv"
+	"strings"
 
-	"github.com/mati-com/golang-crud-cli/tasks"
+	task "github.com/mati-com/golang-crud-cli/tasks"
 )
 
 func main() {
@@ -18,7 +21,7 @@ func main() {
 
 	defer file.Close()
 
-	var tasks []tasks.Task
+	var tasks []task.Task
 
 	info, err := file.Stat()
 	if err != nil {
@@ -36,10 +39,56 @@ func main() {
 			panic(err)
 		}
 	} else {
-		tasks = []tasks.Task{}
+		tasks = []task.Task{}
 	}
 
 	if len(os.Args) < 2 {
+		printUsage()
+		return
+	}
+
+	switch os.Args[1] {
+	case "list":
+		task.ListTasks(tasks)
+
+	case "add":
+		reader := bufio.NewReader(os.Stdin)
+		fmt.Println("Cuál es tu tarea?")
+		name, _ := reader.ReadString('\n')
+		name = strings.TrimSpace(name)
+
+		tasks = task.AddTask(tasks, name)
+		task.SaveTasks(file, tasks)
+
+	case "delete":
+		if len(os.Args) < 3 {
+			fmt.Println("Dame un ID para eliminar")
+			return
+		}
+		id, err := strconv.Atoi(os.Args[2])
+		if err != nil {
+			fmt.Println("El ID debe ser un número")
+			return
+		}
+
+		tasks = task.DeleteTask(tasks, id)
+		task.SaveTasks(file, tasks)
+
+	case "complete":
+		if len(os.Args) < 3 {
+			fmt.Println("Dame un ID para eliminar")
+			return
+		}
+		id, err := strconv.Atoi(os.Args[2])
+		if err != nil {
+			fmt.Println("El ID debe ser un número")
+			return
+		}
+
+		tasks = task.CompleteTask(tasks, id)
+		task.SaveTasks(file, tasks)
+
+	default:
 		printUsage()
 	}
 
